@@ -4,19 +4,12 @@ JWT 인증 모듈
 """
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import config
-from server.database import get_db
+from server.database import get_db, verify_password
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    """평문 비밀번호와 해시 비교"""
-    return pwd_context.verify(plain, hashed)
 
 
 def create_access_token(user_id: str, username: str, role: str) -> str:

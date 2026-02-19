@@ -4,11 +4,18 @@ SQLite 데이터베이스 초기화 및 연결 관리
 """
 import sqlite3
 from pathlib import Path
-from passlib.context import CryptContext
+import bcrypt
 import config
 
-# 비밀번호 해싱 컨텍스트
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    """비밀번호 해싱"""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    """비밀번호 검증"""
+    return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
 
 # 테이블 생성 SQL
 SCHEMA_SQL = """
@@ -96,7 +103,7 @@ def init_db():
             try:
                 conn.execute(
                     "INSERT INTO users (id, username, password_hash, role) VALUES (?, ?, ?, ?)",
-                    (uid, username, pwd_context.hash(password), role),
+                    (uid, username, hash_password(password), role),
                 )
             except sqlite3.IntegrityError:
                 pass  # 이미 존재하는 계정은 건너뜀
