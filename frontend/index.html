@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사내 규정 AI — Gemini RAG</title>
+    <meta name="description" content="Gemini File Search 기반 자가 수정형 사내 규정 AI 어시스턴트">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ═══ 로그인 화면 ═══ -->
+<div class="login-container" id="loginView">
+    <div class="login-card">
+        <h1>📋 사내 규정 AI</h1>
+        <p>Gemini 기반 자가 수정형 RAG 시스템</p>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">아이디</label>
+                <input type="text" id="username" placeholder="admin 또는 user" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" placeholder="비밀번호 입력" autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn-primary" id="loginBtn">로그인</button>
+            <div class="login-error" id="loginError"></div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ 메인 앱 ═══ -->
+<div class="app-container" id="appView">
+
+    <!-- 헤더 -->
+    <header class="app-header">
+        <div class="header-left">
+            <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+            <span class="app-title">📋 사내 규정 AI</span>
+        </div>
+        <div class="header-right">
+            <a href="/admin" class="btn-admin-link" id="adminLink" style="display:none">⚙️ 관리</a>
+            <div class="user-badge">
+                <span id="usernameDisplay"></span>
+                <span class="user-role" id="roleDisplay"></span>
+            </div>
+            <button class="btn-logout" id="logoutBtn">로그아웃</button>
+        </div>
+    </header>
+
+    <!-- 사이드바 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="btn-new-chat" id="newChatBtn">＋ 새 대화</button>
+        </div>
+        <div class="session-list" id="sessionList">
+            <!-- 세션 목록이 동적으로 렌더링됨 -->
+        </div>
+    </aside>
+
+    <!-- 채팅 영역 -->
+    <main class="chat-area" id="chatArea">
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-empty" id="chatEmpty">
+                <div class="chat-empty-icon">📋</div>
+                <h2>사내 규정에 대해 물어보세요</h2>
+                <p>HWP, PDF, DOCX 등으로 업로드된 사내 규정을 바탕으로 정확한 답변을 제공합니다. AI의 답변이 틀리면 피드백을 남겨주세요.</p>
+            </div>
+        </div>
+
+        <!-- 타이핑 인디케이터 -->
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+
+        <!-- 입력 영역 -->
+        <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+                <textarea class="chat-input" id="chatInput" placeholder="사내 규정에 대해 질문해 보세요..." rows="1"></textarea>
+                <button class="btn-send" id="sendBtn" disabled>➤</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ═══ 피드백 모달 ═══ -->
+<div class="modal-overlay" id="feedbackModal">
+    <div class="modal">
+        <h3>👎 오답 피드백</h3>
+        <p>AI의 답변이 틀렸다면, 올바른 정보를 알려주세요. 관리자 검토 후 지식 베이스에 반영됩니다.</p>
+        <textarea id="feedbackText" placeholder='예: "연차는 15일이 아니라 올해부터 16일로 변경되었습니다."'></textarea>
+        <div class="modal-actions">
+            <button class="btn-cancel" id="feedbackCancel">취소</button>
+            <button class="btn-submit-feedback" id="feedbackSubmit">피드백 제출</button>
+        </div>
+    </div>
+</div>
+
+<!-- 토스트 알림 컨테이너 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
