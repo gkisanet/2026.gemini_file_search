@@ -32,8 +32,13 @@ def _get_client() -> genai.Client:
 def upload_file(file_path: str | Path, store_name: str) -> dict:
     """
     단일 파일을 File Search Store에 업로드하고 인덱싱 완료까지 대기.
+    한글 파일명 등 non-ASCII 경로 대응: 임시 ASCII 심링크 생성 후 업로드.
     반환: {"success": bool, "file": str, "error": str | None}
     """
+    import uuid
+    import shutil
+    import tempfile
+
     file_path = Path(file_path)
 
     if not file_path.exists():
@@ -44,13 +49,27 @@ def upload_file(file_path: str | Path, store_name: str) -> dict:
         return {"success": False, "file": str(file_path), "error": f"지원하지 않는 파일 형식: {ext}"}
 
     client = _get_client()
+    original_name = file_path.name  # 원본 파일명 (한글 포함 가능)
+
+    # non-ASCII 파일 경로 여부 확인 → 임시 ASCII 경로로 복사
+    temp_copy_path = None
+    upload_path = file_path
+    try:
+        str(file_path).encode("ascii")
+    except UnicodeEncodeError:
+        # ASCII 인코딩 불가 → 임시 디렉터리에 UUID 기반 ASCII 이름으로 복사
+        temp_dir = tempfile.mkdtemp()
+        safe_name = f"{uuid.uuid4().hex}{ext}"
+        temp_copy_path = Path(temp_dir) / safe_name
+        shutil.copy2(file_path, temp_copy_path)
+        upload_path = temp_copy_path
 
     try:
-        # Store에 직접 업로드
+        # Store에 업로드 (ASCII-safe 경로 사용, display_name은 원본 한글명 유지)
         operation = client.file_search_stores.upload_to_file_search_store(
-            file=str(file_path),
+            file=str(upload_path),
             file_search_store_name=store_name,
-            config={"display_name": file_path.name},
+            config={"display_name": original_name},
         )
 
         # 인덱싱 완료 대기
@@ -67,6 +86,10 @@ def upload_file(file_path: str | Path, store_name: str) -> dict:
 
     except Exception as e:
         return {"success": False, "file": str(file_path), "error": str(e)}
+    finally:
+        # 임시 복사본 정리
+        if temp_copy_path and temp_copy_path.exists():
+            shutil.rmtree(temp_copy_path.parent, ignore_errors=True)
 
 
 def upload_directory(dir_path: str | Path, store_name: str) -> list[dict]:

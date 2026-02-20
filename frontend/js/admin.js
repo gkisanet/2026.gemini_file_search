@@ -11,6 +11,7 @@ const state = {
     user: JSON.parse(localStorage.getItem('user') || 'null'),
     currentFilter: '',
     rejectTargetId: null,
+    selectedFiles: [],
 };
 
 // ── 유틸리티 ──────────────────────────────────────────
@@ -62,7 +63,7 @@ function logout() {
 
     loadFeedbacks();
     loadDocuments();
-    loadStores();
+    loadStoreFiles();
 
     // 필터 버튼
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -74,8 +75,23 @@ function logout() {
         });
     });
 
-    // 업로드 버튼
+    // 업로드 버튼 및 파일 선택
     $('#uploadBtn').addEventListener('click', handleUpload);
+    $('#btnSelectFiles').addEventListener('click', () => $('#filePicker').click());
+    $('#btnSelectFolder').addEventListener('click', () => $('#folderPicker').click());
+    $('#filePicker').addEventListener('change', e => updateSelectedFiles(e.target.files));
+    $('#folderPicker').addEventListener('change', e => updateSelectedFiles(e.target.files));
+    $('#selectedFilesInfo').addEventListener('click', () => {
+        state.selectedFiles = [];
+        $('#selectedFilesInfo').textContent = "선택된 파일이 없습니다. (버튼 선택 또는 우측 경로 입력)";
+        $('#filePicker').value = "";
+        $('#folderPicker').value = "";
+    });
+
+    // Store 파일 목록 검색/필터 이벤트
+    $('#storeFileSearch').addEventListener('input', debounce(() => loadStoreFiles(1), 400));
+    $('#storeFileCategoryFilter').addEventListener('change', () => loadStoreFiles(1));
+    $('#storeFileTypeFilter').addEventListener('change', () => loadStoreFiles(1));
 
     // 거절 모달
     $('#rejectCancel').addEventListener('click', () => {
@@ -92,6 +108,13 @@ function logout() {
 function debounce(fn, ms) {
     let timer;
     return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+}
+
+function updateSelectedFiles(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    state.selectedFiles = Array.from(fileList);
+    $('#selectedFilesInfo').innerHTML = `<span style="color:var(--success)">${state.selectedFiles.length}개 파일이 선택됨</span> (클릭하여 초기화)`;
+    $('#uploadPath').value = ""; // 서버경로 지움
 }
 
 // ── 피드백 목록 ───────────────────────────────────────
@@ -274,48 +297,177 @@ async function setLatestVersion(docId) {
     }
 }
 
-// ── Store 현황 ────────────────────────────────────────
-async function loadStores() {
+// ── Store 파일 목록 (페이지네이션 + 검색 + 필터) ─────────
+let storeFilePage = 1;
+const STORE_FILE_LIMIT = 20;
+
+async function loadStoreFiles(page = 1) {
+    storeFilePage = page;
+    const search = $('#storeFileSearch').value.trim();
+    const category = $('#storeFileCategoryFilter').value;
+    const storeType = $('#storeFileTypeFilter').value;
+
     try {
-        const data = await api('GET', '/admin/stores');
+        const params = new URLSearchParams({
+            page, limit: STORE_FILE_LIMIT, search, category, store_type: storeType
+        });
+        const data = await api('GET', `/admin/store_files?${params}`);
         if (!data) return;
 
-        const container = $('#storeList');
-        if (!data.stores || data.stores.length === 0) {
-            container.innerHTML = '<div class="empty-state">File Search Store가 없습니다</div>';
-            return;
+        // 요약
+        $('#storeFileSummary').textContent = `총 ${data.total}개 파일 · ${data.page}/${data.total_pages} 페이지`;
+
+        // 카테고리 필터 옵션 동적 생성 (첫 로드 시만)
+        const catSelect = $('#storeFileCategoryFilter');
+        if (catSelect.options.length <= 1 && data.categories.length > 0) {
+            data.categories.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.name === '미분류' ? '' : c.name;
+                opt.textContent = `${c.name} (${c.count})`;
+                catSelect.appendChild(opt);
+            });
         }
 
-        container.innerHTML = data.stores.map(s => `
-            <div class="store-card">
-                <div class="store-name">${escapeHtml(s.display_name || s.name)}</div>
-                <div class="store-doc-count">📄 문서 수: ${s.document_count || 0}개</div>
-            </div>
-        `).join('');
+        // 테이블 바디
+        const tbody = $('#storeFileTableBody');
+        if (data.files.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--text-muted)">파일이 없습니다</td></tr>';
+        } else {
+            const startIdx = (data.page - 1) * data.limit;
+            tbody.innerHTML = data.files.map((f, i) => {
+                const size = f.file_size ? formatFileSize(f.file_size) : '-';
+                const catBadge = f.category
+                    ? `<span style="padding:0.15rem 0.4rem;border-radius:4px;font-size:0.75rem;background:rgba(108,92,231,0.15);color:var(--accent-secondary)">${escapeHtml(f.category)}</span>`
+                    : '<span style="color:var(--text-muted)">미분류</span>';
+                const storeBadge = f.store_type === 'primary'
+                    ? '<span style="color:var(--info)">원본</span>'
+                    : '<span style="color:var(--warning)">교정</span>';
+                const date = f.created_at ? f.created_at.split('T')[0] : '-';
+                return `<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                    <td style="padding:0.5rem;color:var(--text-muted)">${startIdx + i + 1}</td>
+                    <td style="padding:0.5rem;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(f.file_name)}">${escapeHtml(f.file_name)}</td>
+                    <td style="padding:0.5rem">${catBadge}</td>
+                    <td style="padding:0.5rem">${storeBadge}</td>
+                    <td style="padding:0.5rem;text-align:right;color:var(--text-muted)">${size}</td>
+                    <td style="padding:0.5rem;color:var(--text-muted)">${date}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // 페이지네이션 렌더링
+        renderStoreFilePagination(data.page, data.total_pages);
     } catch (err) {
-        console.error('Store 로드 실패:', err);
+        console.error('Store 파일 목록 로드 실패:', err);
     }
 }
 
-// ── 업로드 ────────────────────────────────────────────
+function renderStoreFilePagination(current, total) {
+    const container = $('#storeFilePagination');
+    if (total <= 1) { container.innerHTML = ''; return; }
+
+    let html = '';
+    const btnStyle = 'padding:0.35rem 0.7rem;border-radius:var(--radius-sm);border:1px solid var(--border-glass);background:var(--bg-glass);color:var(--text-secondary);cursor:pointer;font-size:0.85rem;';
+    const activeStyle = 'padding:0.35rem 0.7rem;border-radius:var(--radius-sm);border:1px solid var(--accent-primary);background:var(--accent-primary);color:white;cursor:default;font-size:0.85rem;';
+
+    // 이전 버튼
+    if (current > 1) html += `<button style="${btnStyle}" onclick="loadStoreFiles(${current - 1})">◀</button>`;
+    
+    // 페이지 번호 (최대 7개 표시)
+    let startP = Math.max(1, current - 3);
+    let endP = Math.min(total, current + 3);
+    if (startP > 1) html += `<button style="${btnStyle}" onclick="loadStoreFiles(1)">1</button><span style="color:var(--text-muted)">…</span>`;
+    for (let p = startP; p <= endP; p++) {
+        html += `<button style="${p === current ? activeStyle : btnStyle}" onclick="loadStoreFiles(${p})">${p}</button>`;
+    }
+    if (endP < total) html += `<span style="color:var(--text-muted)">…</span><button style="${btnStyle}" onclick="loadStoreFiles(${total})">${total}</button>`;
+    
+    // 다음 버튼
+    if (current < total) html += `<button style="${btnStyle}" onclick="loadStoreFiles(${current + 1})">▶</button>`;
+    
+    container.innerHTML = html;
+}
+
+function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+}
+
+
 async function handleUpload() {
     const path = $('#uploadPath').value.trim();
     const storeType = $('#uploadStore').value;
     const versionGroup = $('#uploadVersionGroup') ? $('#uploadVersionGroup').value.trim() : '';
-    if (!path) { showToast('파일 경로를 입력하세요', 'error'); return; }
+    
+    if (!path && state.selectedFiles.length === 0) { 
+        showToast('파일/폴더를 선택하거나 서버 경로를 입력하세요', 'error'); 
+        return; 
+    }
+
+    const totalFiles = state.selectedFiles.length || '?';
+    const infoEl = $('#selectedFilesInfo');
+    const uploadBtn = $('#uploadBtn');
+    
+    // 업로드 시작 UI 업데이트
+    uploadBtn.textContent = '⏳ 업로드 중...';
+    uploadBtn.disabled = true;
+    
+    // 경과 시간 타이머 시작
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const min = Math.floor(elapsed / 60);
+        const sec = elapsed % 60;
+        const timeStr = min > 0 ? `${min}분 ${sec}초` : `${sec}초`;
+        infoEl.innerHTML = `<span style="color:var(--warning)">⏳ ${totalFiles}개 파일 업로드 + AI 인덱싱 진행 중... (${timeStr} 경과)</span><br><span style="font-size:0.8rem;color:var(--text-muted)">파일당 최대 수 분 소요될 수 있습니다. 터미널 로그에서 진행 상황을 확인하세요.</span>`;
+    }, 1000);
 
     try {
-        const data = await api('POST', '/admin/upload', {
-            path,
-            store_type: storeType,
-            version_group: versionGroup,
-        });
+        let data;
+
+        if (state.selectedFiles.length > 0) {
+            const formData = new FormData();
+            for (const f of state.selectedFiles) {
+                formData.append('files', f);
+            }
+            formData.append('store_type', storeType);
+            formData.append('version_group', versionGroup);
+            
+            const res = await fetch(`${API}/admin/upload_client`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${state.token}` },
+                body: formData
+            });
+            data = await res.json();
+            if (!res.ok) throw new Error(data.detail || '업로드 실패');
+        } else {
+            data = await api('POST', '/admin/upload', {
+                path,
+                store_type: storeType,
+                version_group: versionGroup,
+            });
+        }
+
         if (data) {
             showToast(data.message, 'success');
+            // reset files
+            state.selectedFiles = [];
+            infoEl.textContent = "선택된 파일이 없습니다. (버튼 또는 경로 입력)";
+            $('#uploadPath').value = "";
+            $('#filePicker').value = "";
+            $('#folderPicker').value = "";
+            $('#uploadVersionGroup').value = "";
+
             loadDocuments();
-            loadStores();
+            loadStoreFiles();
         }
     } catch (err) {
         showToast('업로드 실패: ' + err.message, 'error');
+        infoEl.innerHTML = `<span style="color:var(--danger)">❌ 업로드 실패: ${escapeHtml(err.message)}</span>`;
+    } finally {
+        clearInterval(timer);
+        uploadBtn.textContent = '🚀 업로드';
+        uploadBtn.disabled = false;
     }
 }

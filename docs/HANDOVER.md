@@ -8,14 +8,14 @@
 ## 즉시 실행 가능 환경
 ```bash
 cd ~/topProject/2026.gemini_file_search
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env  # GEMINI_API_KEY 입력
-python -m server.app
+python3 -m server.app
 ```
 
 ## Next Steps
-1. **서버 실행 검증** — `python -m server.app`으로 서버 띄우고 브라우저에서 확인
+1. **서버 실행 검증** — `python3 -m server.app`으로 서버 띄우고 브라우저에서 확인
 2. **실제 문서 업로드 테스트** — HWP/PDF 사규 파일을 관리자 대시보드에서 업로드
 3. **피드백 루프 테스트** — 채팅에서 오답 피드백 → 관리자 승인 → 교정 반영 확인
 4. **프로덕션 배포** — Docker 컨테이너화 또는 Cloud Run 배포 고려

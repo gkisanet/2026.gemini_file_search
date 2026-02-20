@@ -396,30 +396,71 @@
     </div>
     <div id="docList"></div>
 
-    <!-- Store 현황 -->
-    <div class="section-title" style="margin-top:2rem">📁 File Search Store 현황</div>
-    <div id="storeList"></div>
+    <!-- Store 파일 목록 -->
+    <div class="section-title" style="margin-top:2rem">📁 File Search Store 파일 목록</div>
+    
+    <!-- 필터 바 -->
+    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap;">
+        <input type="text" id="storeFileSearch" placeholder="파일명 검색..." style="flex: 1; min-width: 200px; padding: 0.5rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+        <select id="storeFileCategoryFilter" style="padding: 0.5rem; background: var(--bg-secondary); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.85rem;">
+            <option value="">전체 카테고리</option>
+        </select>
+        <select id="storeFileTypeFilter" style="padding: 0.5rem; background: var(--bg-secondary); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.85rem;">
+            <option value="">전체 Store</option>
+            <option value="primary">원본 사규</option>
+            <option value="correction">교정 데이터</option>
+        </select>
+        <span id="storeFileSummary" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+    </div>
+
+    <!-- 파일 테이블 -->
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-secondary);">
+                    <th style="padding: 0.6rem 0.5rem; text-align: left;">#</th>
+                    <th style="padding: 0.6rem 0.5rem; text-align: left;">파일명</th>
+                    <th style="padding: 0.6rem 0.5rem; text-align: left;">카테고리</th>
+                    <th style="padding: 0.6rem 0.5rem; text-align: left;">Store</th>
+                    <th style="padding: 0.6rem 0.5rem; text-align: right;">크기</th>
+                    <th style="padding: 0.6rem 0.5rem; text-align: left;">업로드일</th>
+                </tr>
+            </thead>
+            <tbody id="storeFileTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div id="storeFilePagination" style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1rem;"></div>
 
     <!-- 문서 업로드 -->
     <div class="upload-section">
         <div class="section-title">📤 문서 업로드</div>
-        <div class="upload-form">
-            <div class="form-group">
-                <label>파일/디렉토리 경로</label>
-                <input type="text" id="uploadPath" placeholder="/path/to/documents">
-            </div>
-            <div class="form-group" style="max-width:180px">
+
+        <!-- 1행: 파일 선택 영역 -->
+        <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem;">
+            <button class="btn-primary" id="btnSelectFiles" style="white-space: nowrap; width: auto; padding: 0.6rem 1.2rem; font-size: 0.9rem;">📄 파일 선택</button>
+            <button class="btn-primary" id="btnSelectFolder" style="white-space: nowrap; width: auto; padding: 0.6rem 1.2rem; font-size: 0.9rem; background: linear-gradient(135deg, #00cec9, #55efc4);">📁 폴더 선택</button>
+            <input type="text" id="uploadPath" placeholder="또는 서버 경로 직접 입력" style="flex: 1; padding: 0.6rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; outline: none;">
+        </div>
+        <div id="selectedFilesInfo" style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">선택된 파일이 없습니다. (버튼 또는 경로 입력)</div>
+        <input type="file" id="filePicker" multiple style="display: none;">
+        <input type="file" id="folderPicker" webkitdirectory directory multiple style="display: none;">
+
+        <!-- 2행: 옵션 + 업로드 버튼 -->
+        <div style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="margin-bottom: 0; min-width: 140px;">
                 <label>대상 Store</label>
                 <select id="uploadStore">
                     <option value="primary">원본 사규</option>
                     <option value="correction">교정 데이터</option>
                 </select>
             </div>
-            <div class="form-group" style="max-width:180px">
+            <div class="form-group" style="margin-bottom: 0; min-width: 140px;">
                 <label>버전 그룹 (선택)</label>
                 <input type="text" id="uploadVersionGroup" placeholder="예: 인사규정">
             </div>
-            <button class="btn-primary" id="uploadBtn" style="width:auto;padding:0.75rem 1.5rem">업로드</button>
+            <button class="btn-primary" id="uploadBtn" style="white-space: nowrap; width: auto; padding: 0.7rem 1.5rem; font-size: 0.95rem;">🚀 업로드</button>
         </div>
     </div>
 </div>

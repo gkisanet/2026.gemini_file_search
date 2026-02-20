@@ -10,6 +10,10 @@
 - [x] README.md 교육용 가이드 작성
 - [x] Git 초기화 + GitHub push
 - [x] docs/ 문서 작성 (CONTEXT, TASKS, CHANGELOG, HANDOVER)
+- [x] 과학적 데이터 파이프라인 및 폴더 구조 세팅 (primary_data 등)
+- [x] OLE 메타데이터 기반 HWP 파일 시간 추출 및 DB 고도화 (통계/분류 대비)
+- [x] Gemini 기반 업로드 문서 자동 카테고리 태깅 기능 구축 (분류 자동화)
+- [x] 관리자 페이지 UI 액션 고도화 (브라우저 자체 폴더/파일 선택기 연동 및 Direct Upload)
 
 ## 🔄 In Progress
 - [/] 서버 실행 및 UI 검증

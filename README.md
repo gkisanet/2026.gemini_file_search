@@ -148,6 +148,13 @@ AI에게는 시스템 프롬프트로 **"두 Store의 내용이 충돌하면 Cor
 │   ├── rag_system.db            # SQLite 데이터베이스
 │   └── corrections/             # 승인된 교정 텍스트 파일
 │
+├── primary_data/                # 원본 로우 데이터 (불변)
+├── secondary_data/              # 전처리/유도된 데이터셋
+├── intermediate_results/        # 분석 중간 결과물
+├── visualizations/              # 생성된 이미지/차트 파일
+├── interim_reports/             # 관리/분석 중간 보고서
+├── scripts/                     # 분석 및 실행 스크립트
+│
 └── docs/                        # 문서
     ├── CONTEXT.md
     ├── TASKS.md
@@ -218,7 +225,7 @@ AI에게는 시스템 프롬프트로 **"두 Store의 내용이 충돌하면 Cor
 cd 2026.gemini_file_search
 
 # 가상환경 생성 및 활성화
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 
 # 의존성 설치
@@ -238,7 +245,7 @@ cp .env.example .env
 ### 3. 서버 실행
 
 ```bash
-python -m server.app
+python3 -m server.app
 # 또는
 uvicorn server.app:app --host 0.0.0.0 --port 8000 --reload
 ```

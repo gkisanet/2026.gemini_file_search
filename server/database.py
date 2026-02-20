@@ -71,6 +71,10 @@ CREATE TABLE IF NOT EXISTS documents (
     is_latest INTEGER DEFAULT 1,
     store_name TEXT NOT NULL,
     store_type TEXT DEFAULT 'primary' CHECK(store_type IN ('primary', 'correction')),
+    doc_created_at DATETIME,
+    doc_modified_at DATETIME,
+    file_size INTEGER,
+    category TEXT,
     uploaded_by TEXT REFERENCES users(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
